@@ -145,6 +145,7 @@ func (e *HTTPEmitter) SendSpansBatch(spans []*types.Span) error {
 // SendDeployEvent sends a deploy event webhook to the ingest API.
 func (e *HTTPEmitter) SendDeployEvent(deploy *types.DeployEvent) error {
 	payload := map[string]any{
+		"timestamp_unix_nano": deploy.TimestampUnixNano,
 		"deployment": map[string]any{
 			"id":          1001,
 			"sha":         deploy.CommitHash,

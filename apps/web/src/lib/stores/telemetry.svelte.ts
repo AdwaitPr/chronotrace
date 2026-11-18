@@ -119,7 +119,8 @@ export class TelemetryStudioState {
 		try {
 			const res = await fetch(`${this.apiBaseUrl}/api/notes?incident_id=default`);
 			if (res.ok) {
-				this.notes = await res.json();
+				const data = await res.json();
+				this.notes = Array.isArray(data) ? data : [];
 			}
 		} catch (e) {
 			console.error('Failed to fetch notes:', e);
@@ -152,7 +153,8 @@ export class TelemetryStudioState {
 		try {
 			const res = await fetch(`${this.apiBaseUrl}/api/bookmarks`);
 			if (res.ok) {
-				this.bookmarks = await res.json();
+				const data = await res.json();
+				this.bookmarks = Array.isArray(data) ? data : [];
 			}
 		} catch (e) {
 			console.error('Failed to fetch bookmarks:', e);

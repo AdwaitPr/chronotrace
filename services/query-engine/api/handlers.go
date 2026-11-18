@@ -156,7 +156,17 @@ func RegisterRoutes(app *fiber.App, st store.TelemetryStore, rec *timetravel.Sta
 
 	// GET /api/state?ts=<unix_ms>&service=<optional_filter>
 	api.Get("/state", func(c *fiber.Ctx) error {
-		tsMs := parseQueryInt64(c, "ts", time.Now().UnixMilli())
+		tsMs := parseQueryInt64(c, "ts", 0)
+		if tsMs == 0 {
+			tsNano := parseQueryInt64(c, "timestamp", 0)
+			if tsNano > 1e15 {
+				tsMs = tsNano / 1e6
+			} else if tsNano > 0 {
+				tsMs = tsNano
+			} else {
+				tsMs = time.Now().UnixMilli()
+			}
+		}
 		svcFilter := c.Query("service")
 		ctx := c.Context()
 

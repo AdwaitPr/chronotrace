@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import TopologyWebGL from '../lib/components/TopologyWebGL.svelte';
 	import DawTimeline from '../lib/components/DawTimeline.svelte';
 	import InspectorDrawer from '../lib/components/InspectorDrawer.svelte';
@@ -15,6 +16,12 @@
 		Share2,
 		Layers
 	} from 'lucide-svelte';
+
+	onMount(() => {
+		if (typeof window !== 'undefined') {
+			(window as any).studio = studio;
+		}
+	});
 
 	let isTriggeringScenario = $state(false);
 

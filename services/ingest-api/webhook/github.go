@@ -45,6 +45,7 @@ func ParseGitHubWebhook(payload []byte, eventType, signature, secret string) (*t
 	switch eventType {
 	case "deployment_status":
 		var p struct {
+			TimestampUnixNano int64 `json:"timestamp_unix_nano"`
 			Deployment struct {
 				ID          int64  `json:"id"`
 				SHA         string `json:"sha"`
@@ -68,6 +69,11 @@ func ParseGitHubWebhook(payload []byte, eventType, signature, secret string) (*t
 			svcName = "app"
 		}
 
+		ts := now
+		if p.TimestampUnixNano > 0 {
+			ts = p.TimestampUnixNano
+		}
+
 		return &types.DeployEvent{
 			ID:                fmt.Sprintf("deploy-%d", p.Deployment.ID),
 			ServiceName:       svcName,
@@ -75,7 +81,7 @@ func ParseGitHubWebhook(payload []byte, eventType, signature, secret string) (*t
 			CommitHash:        p.Deployment.SHA,
 			CommitMessage:     p.Deployment.Description,
 			Author:            p.Deployment.Creator.Login,
-			TimestampUnixNano: now,
+			TimestampUnixNano: ts,
 			DiffSummary:       fmt.Sprintf("Deployed ref %s (%s)", p.Deployment.Ref, p.Deployment.Environment),
 		}, nil
 

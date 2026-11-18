@@ -1,0 +1,77 @@
+{
+  "version": "0.1.0",
+  "generated_at": "2026-11-18T08:09:58.367Z",
+  "viewports": {
+    "width": 1440,
+    "height": 900,
+    "dpr": 2
+  },
+  "callouts": {
+    "①": {
+      "name": "WebGL2 Live-Morphing Service Topology",
+      "dom_selector": "[data-testid=\"topology-canvas\"]",
+      "svelte_component": "apps/web/src/lib/components/TopologyWebGL.svelte",
+      "rune_bindings": [
+        "studio.activeNodes ($derived)",
+        "studio.activeEdges ($derived)",
+        "studio.selectedService ($state)"
+      ],
+      "backend_route": "GET /api/state?timestamp={unix_nano} & WS /ws/scrub",
+      "storage_tier": "Redis 7 30s Keyframe Cache + ClickHouse MergeTree delta replay"
+    },
+    "②": {
+      "name": "4-Track DAW Multi-Track Timeline Scrubber",
+      "dom_selector": "[data-testid=\"daw-timeline\"]",
+      "svelte_component": "apps/web/src/lib/components/DawTimeline.svelte",
+      "rune_bindings": [
+        "studio.playheadMs ($state)",
+        "studio.shuttleSpeed ($state)",
+        "studio.isLoopEnabled ($state)"
+      ],
+      "backend_route": "GET /api/timeline/overview & WS /ws/scrub",
+      "storage_tier": "ClickHouse LowCardinality Aggregation (300 buckets)"
+    },
+    "③": {
+      "name": "Deploy & Config Commit Pin Track",
+      "dom_selector": "[data-testid=\"track-deploy-pins\"]",
+      "svelte_component": "apps/web/src/lib/components/DawTimeline.svelte",
+      "rune_bindings": [
+        "studio.deploys ($state)"
+      ],
+      "backend_route": "GET /api/timeline/overview (deploys)",
+      "storage_tier": "ClickHouse deploy_events & SQLite modernc.org/sqlite"
+    },
+    "④": {
+      "name": "Latency & 5xx Error Waveform Track",
+      "dom_selector": "[data-testid=\"track-waveform\"]",
+      "svelte_component": "apps/web/src/lib/components/DawTimeline.svelte",
+      "rune_bindings": [
+        "studio.buckets ($state)"
+      ],
+      "backend_route": "GET /api/timeline/overview (buckets)",
+      "storage_tier": "ClickHouse ZSTD Columnar Waveforms"
+    },
+    "⑤": {
+      "name": "Suspect Root-Cause Confidence Card",
+      "dom_selector": "[data-testid=\"root-cause-card\"]",
+      "svelte_component": "apps/web/src/lib/components/InspectorDrawer.svelte",
+      "rune_bindings": [
+        "studio.topSuspect ($derived)",
+        "studio.currentState.suspects ($derived)"
+      ],
+      "backend_route": "WS /ws/scrub binary message type 0x02",
+      "storage_tier": "Query Engine Causal Scorer (Modified Z-Score x Exponential Decay)"
+    },
+    "⑥": {
+      "name": "Playhead-Locked Structured Log Inspector",
+      "dom_selector": "[data-testid=\"log-inspector-drawer\"]",
+      "svelte_component": "apps/web/src/lib/components/InspectorDrawer.svelte",
+      "rune_bindings": [
+        "studio.currentState.recent_logs ($derived)",
+        "studio.notes ($state)"
+      ],
+      "backend_route": "GET /api/notes & WS /ws/scrub",
+      "storage_tier": "SQLite Metadata Store (pure Go modernc.org/sqlite)"
+    }
+  }
+}

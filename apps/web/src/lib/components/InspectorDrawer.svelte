@@ -170,7 +170,7 @@
 		<!-- Postmortem Notes Section -->
 		<div class="border-t border-white/10 p-3 bg-[#0A0D14]">
 			<div class="flex items-center justify-between">
-				<span class="font-semibold text-slate-300">POSTMORTEM NOTES ({studio.notes.length})</span>
+				<span class="font-semibold text-slate-300">POSTMORTEM NOTES ({(studio.notes || []).length})</span>
 				<button
 					onclick={() => (isAddingNote = !isAddingNote)}
 					class="rounded bg-sky-950 px-2 py-1 text-[10px] font-bold text-sky-400 hover:bg-sky-900"

@@ -24,10 +24,21 @@ node_modules/
 # Databases & local data
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
+*.wal
 data/
 clickhouse-data/
 redis-data/
 nats-data/
+
+# Screenshots & DOM Snapshots (explicitly tracked)
+!docs/screenshots/**
+!docs/dom-snapshots/**
+
+# Temporary capture tools
+tools/capture/
+scripts/temp_capture/
 
 # OS
 .DS_Store
