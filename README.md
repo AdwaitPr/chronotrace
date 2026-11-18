@@ -265,6 +265,122 @@ ChronoTrace supports zero-dependency local development alongside high-throughput
 
 ---
 
+## 💾 Storage Engine Deep Dive & Schemas
+
+### ClickHouse Columnar MergeTree (`deploy/docker/clickhouse/init.sql`)
+```sql
+-- Partitioned by month, ordered for sub-second timeline slicing
+CREATE TABLE IF NOT EXISTS chronotrace.spans (
+    trace_id           String CODEC(ZSTD(1)),
+    span_id            String CODEC(ZSTD(1)),
+    parent_span_id     String CODEC(ZSTD(1)),
+    service_name       LowCardinality(String) CODEC(ZSTD(1)),
+    operation_name     LowCardinality(String) CODEC(ZSTD(1)),
+    span_kind          LowCardinality(String) CODEC(ZSTD(1)),
+    start_time_unix_nano Int64 CODEC(DoubleDelta, ZSTD(1)),
+    end_time_unix_nano   Int64 CODEC(DoubleDelta, ZSTD(1)),
+    duration_ms        Float64 CODEC(Gorilla, ZSTD(1)),
+    status_code        LowCardinality(String) CODEC(ZSTD(1)),
+    status_message     String CODEC(ZSTD(1)),
+    attributes         Map(String, String) CODEC(ZSTD(1)),
+    timestamp          DateTime64(3) MATERIALIZED fromUnixTimestamp64Nano(start_time_unix_nano)
+) ENGINE = MergeTree()
+PARTITION BY toYYYYMM(timestamp)
+PRIMARY KEY (service_name, status_code, timestamp)
+ORDER BY (service_name, status_code, timestamp, trace_id, span_id)
+TTL timestamp + INTERVAL 30 DAY DELETE;
+```
+
+### Redis 7 30s Keyframe Cache (`chronotrace:keyframe:{epoch_30s}`)
+Pre-computed topology snapshots (I-Frames) enable instant point-in-time state jumps:
+```json
+{
+  "timestamp_unix_nano": 1794990187336000000,
+  "nodes": [
+    { "name": "payment-worker", "rps": 45.2, "error_rate": 0.88, "p95_latency_ms": 3540.0, "is_root_cause": true }
+  ],
+  "edges": [
+    { "source": "checkout-svc", "target": "payment-worker", "call_rate": 45.2, "error_rate": 0.88, "p95_latency_ms": 3540.0 }
+  ],
+  "overall_error_rate": 0.289,
+  "suspects": [
+    { "service_name": "payment-worker", "confidence": 0.98, "reason": "Deploy f8a3b19 occurred 90s prior to outage" }
+  ]
+}
+```
+
+### SQLite Incident Metadata Store (`modernc.org/sqlite`)
+Pure Go, zero CGO database persisted locally at `data/metadata.db`:
+```sql
+CREATE TABLE IF NOT EXISTS incident_notes (
+    id TEXT PRIMARY KEY,
+    incident_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    author TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS saved_bookmarks (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    timestamp_unix_nano INTEGER NOT NULL,
+    window_seconds INTEGER NOT NULL,
+    description TEXT,
+    created_at INTEGER NOT NULL
+);
+```
+
+---
+
+## 📂 Monorepo Architecture & Structure
+
+```
+chronotrace/
+├── apps/
+│   └── web/                   # SvelteKit 5 + TypeScript + Tailwind 4 + WebGL2
+│       ├── src/
+│       │   ├── lib/
+│       │   │   ├── components/
+│       │   │   │   ├── DawTimeline.svelte      # 4-track DAW timeline (Canvas 2D)
+│       │   │   │   ├── TopologyWebGL.svelte    # 12-microservice DAG renderer
+│       │   │   │   └── InspectorDrawer.svelte  # Root-cause card & log drawer
+│       │   │   ├── stores/
+│       │   │   │   └── telemetry.svelte.ts     # Svelte 5 Rune stores ($state, $derived)
+│       │   │   └── workers/
+│       │   │       └── decoder.worker.ts       # 13-byte binary WebSocket decoder
+│       │   └── routes/
+│       │       └── +page.svelte                # Obsidian cockpit root route
+├── services/
+│   ├── ingest-api/            # High-throughput OTLP & Webhook receiver (:4318)
+│   │   ├── otlp/              # JSON & Protobuf trace normalizer & scrubber
+│   │   └── webhook/           # GitHub webhook deployment verifier
+│   └── query-engine/          # Time-travel reconstruction & causal attribution (:8080)
+│       ├── timetravel/        # 30s I-frame + P-frame delta reconstructor
+│       ├── causal/            # Modified Z-Score & exponential time-decay scorer
+│       ├── ws/                # Atomic coalescing binary WebSocket streamer
+│       └── api/               # REST API for timeline overview, notes, bookmarks
+├── tools/
+│   └── chaos-sim/             # 12-microservice outage generator & replay CLI
+│       ├── scenarios/         # canary-bad-pool, db-lock-storm, redis-eviction-cascade
+│       └── topology/          # Realistic e-commerce DAG simulation engine
+├── shared/
+│   └── pkg/
+│       ├── types/             # Domain models (Span, DeployEvent, PointInTimeState)
+│       ├── bus/               # EventBus (InMemoryEventBus & NATSJetStreamBus)
+│       └── store/             # TelemetryStore (RingBuffer, ClickHouse, SQLite)
+├── deploy/
+│   └── docker/                # Resource-capped cluster compose (ClickHouse, NATS, Redis 7)
+├── docs/
+│   ├── screenshots/           # High-DPI annotated & workflow captures
+│   └── dom-snapshots/         # Semantic ARIA DOM skeletons & ui-telemetry-map.json
+├── scripts/
+│   └── verify_milestones.sh   # Full 4-part automated verification suite
+└── go.work                    # Root Go workspace unifying all modules
+```
+
+---
+
 ## 🚀 Quickstart Guide
 
 ### Prerequisites
