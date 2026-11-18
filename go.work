@@ -1,0 +1,9 @@
+go 1.27
+
+use (
+	./shared/pkg
+	./services/ingest-api
+	./services/query-engine
+	./tools/chaos-sim
+	./deploy/docker
+)
