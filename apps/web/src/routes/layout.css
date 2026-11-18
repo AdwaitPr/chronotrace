@@ -1,1 +1,11 @@
-@import 'tailwindcss';
+@import "tailwindcss";
+
+@layer base {
+	body {
+		background-color: #090B10;
+		color: #E2E8F0;
+		font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+		overflow: hidden;
+		user-select: none;
+	}
+}
